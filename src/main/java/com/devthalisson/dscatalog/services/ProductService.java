@@ -1,7 +1,10 @@
 package com.devthalisson.dscatalog.services;
 
+import com.devthalisson.dscatalog.dto.CategoryDTO;
 import com.devthalisson.dscatalog.dto.ProductDTO;
+import com.devthalisson.dscatalog.entities.Category;
 import com.devthalisson.dscatalog.entities.Product;
+import com.devthalisson.dscatalog.repositories.CategoryRepository;
 import com.devthalisson.dscatalog.repositories.ProductRepository;
 import com.devthalisson.dscatalog.services.exceptions.DatabaseException;
 import com.devthalisson.dscatalog.services.exceptions.ResourceNotFoundException;
@@ -19,36 +22,39 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductService {
 
     @Autowired
-    private ProductRepository repository;
+    private ProductRepository productRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
     public Page<ProductDTO> findAllPaged(PageRequest pageRequest) {
-        Page<Product> list = repository.findAll(pageRequest);
-        Page<ProductDTO> listDto = list.map(x -> new ProductDTO(x));
+        Page<Product> list = productRepository.findAll(pageRequest);
+        Page<ProductDTO> listDto = list.map(x -> new ProductDTO(x, x.getCategories()));
         return listDto;
     }
 
     @Transactional(readOnly = true)
     public ProductDTO findById(Long id) {
-        Product obj = repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Entity not found"));
+        Product obj = productRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Entity not found"));
             return new ProductDTO(obj, obj.getCategories());
     }
 
     @Transactional
     public ProductDTO insert(ProductDTO dto) {
         Product entity = new Product();
-        //entity.setName(dto.getName());
-        entity = repository.save(entity);
+        copyDtoToEntity(dto, entity);
+        entity = productRepository.save(entity);
         return new ProductDTO(entity);
     }
 
     @Transactional
     public ProductDTO update(Long id, ProductDTO dto) {
         try {
-            Product obj = repository.getReferenceById(id);
-            //obj.setName(dto.getName());
-            obj = repository.save(obj);
-            return new ProductDTO(obj);
+            Product entity = productRepository.getReferenceById(id);
+            copyDtoToEntity(dto, entity);
+            entity = productRepository.save(entity);
+            return new ProductDTO(entity);
         } catch (EntityNotFoundException error) {
             throw new ResourceNotFoundException("Id " + id + " not found");
         }
@@ -56,15 +62,28 @@ public class ProductService {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void delete(Long id) {
-        if (!repository.existsById(id)) {
+        if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Id " + id + " not found");
         }
         try {
-            repository.deleteById(id);
+            productRepository.deleteById(id);
         }
         catch (DataIntegrityViolationException e) {
             throw new DatabaseException("Falha de integridade referencial");
         }
     }
 
+    private void copyDtoToEntity(ProductDTO dto, Product entity) {
+        entity.setName(dto.getName());
+        entity.setDescription(dto.getDescription());
+        entity.setPrice(dto.getPrice());
+        entity.setImgUrl(dto.getImgUrl());
+        entity.setDate(dto.getDate());
+
+        entity.getCategories().clear();
+        for (CategoryDTO catDto : dto.getCategories()) {
+            Category category = categoryRepository.getReferenceById(catDto.getId());
+            entity.getCategories().add(category);
+        }
+    }
 }

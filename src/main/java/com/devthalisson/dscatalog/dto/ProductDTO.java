@@ -18,7 +18,7 @@ public class ProductDTO {
     private String imgUrl;
     private Instant date;
 
-    private List<CategoryDTO> categoties = new ArrayList<>();
+    private List<CategoryDTO> categories = new ArrayList<>();
 
     public ProductDTO() {}
 
@@ -42,7 +42,7 @@ public class ProductDTO {
 
     public ProductDTO(Product entity, Set<Category> categories) {
         this(entity);
-        categories.forEach(x -> this.categoties.add(new CategoryDTO(x)));
+        categories.forEach(x -> this.categories.add(new CategoryDTO(x)));
     }
 
     public Long getId() {
@@ -93,11 +93,11 @@ public class ProductDTO {
         this.date = date;
     }
 
-    public List<CategoryDTO> getCategoties() {
-        return categoties;
+    public List<CategoryDTO> getCategories() {
+        return categories;
     }
 
-    public void setCategoties(List<CategoryDTO> categoties) {
-        this.categoties = categoties;
+    public void setCategories(List<CategoryDTO> categoties) {
+        this.categories = categoties;
     }
 }
